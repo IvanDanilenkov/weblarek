@@ -55,6 +55,84 @@ Presenter - презентер содержит основную логику п
 
 ### Базовый код
 
+## Данные
+type TPayment = 'card' | 'cash' | '';
+
+interface IProduct {
+  id: string;
+  description: string;
+  image: string;
+  title: string;
+  category: string;
+  price: number | null;
+}
+
+interface IBuyer {
+  payment: TPayment;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+IProduct — товар из API (для каталога/карточек).
+
+IBuyer — данные покупателя (форма заказа).
+
+## Модели данных
+
+### Класс Catalog
+Хранит список товаров и выбранный товар
+
+Конструктор:
+`constructor()`
+
+Поля класса:
+`private items: IProduct[]` - все товары из API
+`private selectedId: string | null` - текущий выбранный товар
+
+Методы класса:
+`setItems(items: IProduct[]): void` - сохранить список
+`getItems(): IProduct[]` - вернуть список
+`getItem(id: string): IProduct | undefined` - найти по id
+`setSelectedId(id: string | null): void` - выбрать товар
+`getSelectedItem(): IProduct | null` - вернуть выбранный товар
+
+### Класс Cart
+Хранит товары, выбранные к покупки. Считает сумму/количество
+
+Конструктор:
+`constructor()`
+
+Поля класса:
+`private items: IProduct[]` - содержимое корзины
+
+Методы класса:
+`getItems(): IProduct[]` - возвращает список товаров в корзине
+`addItem(product: IProduct): void` - добовляет переданный товар в корзину
+`removeItem(productId: string): void` - удаляет товар по его идентификатору
+`clear(): void` - полностью очищает корзину
+`getTotal(): number` — возвращает общую сумму всех товаров (для price: null берется 0)
+`getCount(): number` — возвращает количество товаров в корзине
+`hasItem(productId: string): boolean` - проверяет, есть ли товар с указанным id в корзине
+
+### Класс Buyer
+Хранит и валидирует данные покупателя
+
+Конструктор:
+`constructor()`
+
+Поля класса:
+`private payment: TPayment` - выбранный способ оплаты 
+`private email: string` - адрес электронной почты покупателя
+`private phone: string` - номер телефона покупателя
+`private address: string` - адрес доставки
+
+Методы класса:
+`setField(field: keyof IBuyer, value: string): void` - изменяет значение одного поля, не затрагивая остальные
+`getData(): IBuyer` - возвращает текущие данные покупателя
+`clear(): void` - очищает все поля данных покупателя
+`validate(): Record<string, string>` - проверяет корректность введенных данных. Возвращает объект с ошибками, где ключ - имя поля, а значение - текст ошибки. Пустой объект означает, что все поля валидны
+
 #### Класс Component
 Является базовым классом для всех компонентов интерфейса.
 Класс является дженериком и принимает в переменной `T` тип данных, которые могут быть переданы в метод `render` для отображения.

@@ -1,10 +1,12 @@
 type ApiPostMethods = 'POST' | 'PUT' | 'DELETE';
 
+const API_BASE_URL = import.meta.env.VITE_API_ORIGIN;
+
 export class Api {
     readonly baseUrl: string;
     protected options: RequestInit;
 
-    constructor(baseUrl: string, options: RequestInit = {}) {
+    constructor(baseUrl: string = API_BASE_URL, options: RequestInit = {}) {
         this.baseUrl = baseUrl;
         this.options = {
             headers: {
