@@ -1,9 +1,9 @@
 import './scss/styles.scss';
 
 import { apiProducts } from './utils/data';
-import { Catalog } from './components/base/models/Catalog';
-import { Cart } from './components/base/models/Cart';
-import { Buyer } from './components/base/models/Buyer';
+import { Catalog } from './components/models/Catalog';
+import { Cart } from './components/models/Cart';
+import { Buyer } from './components/models/Buyer';
 
 import { Api } from './components/base/Api';
 import { ShopApi } from './components/ApiClient/ShopApi';
@@ -33,12 +33,12 @@ console.log('Корзина / количество:', cart.getCount());
 
 buyer.setField('payment', 'card');
 buyer.setField('email', 'ivan@example.com');
-buyer.setField('phone', '+1-555-0123');
+buyer.setField('phone', '8-800-53555');
 buyer.setField('address', 'Toronto, ON');
 console.log('Покупатель / данные:', buyer.getData());
 console.log('Покупатель / ошибки валидации:', buyer.validate());
 
-// === ЗАГРУЗКА С СЕРВЕРА В ТУ ЖЕ МОДЕЛЬ КАТАЛОГА ===
+// === ЗАГРУЗКА С СЕРВЕРА ===
 (async () => {
   console.log('API base URL =', API_URL);
 
@@ -55,4 +55,3 @@ console.log('Покупатель / ошибки валидации:', buyer.val
     console.error('Ошибка загрузки каталога:', e);
   }
 })();
-

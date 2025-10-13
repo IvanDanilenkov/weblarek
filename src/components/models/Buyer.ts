@@ -1,4 +1,4 @@
-import type { IBuyer, TPayment } from "../../../types";
+import type { IBuyer, TPayment } from "../../types";
 
 export class Buyer {
   private payment: TPayment = '';
