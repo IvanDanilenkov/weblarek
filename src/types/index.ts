@@ -22,3 +22,20 @@ export interface IBuyer {
   phone: string;
   address: string;
 }
+
+export interface IProductsResponse {
+  items: IProduct[];
+}
+
+// Заказ. Используем уже существующие типы покупателя и айди товаров.
+export type ProductID = string;
+
+export interface IOrderRequest extends IBuyer {
+  items: ProductID[];   // список ID товаров из корзины
+  total: number;        // итоговая сумма (считаем на клиенте)
+}
+
+export interface IOrderResponse {
+  id: string;           // идентификатор созданного заказа
+  total: number;        // сумма, которую подтвердил сервер
+}

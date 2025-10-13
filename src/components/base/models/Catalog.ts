@@ -4,7 +4,7 @@ export class Catalog {
   private items: IProduct[] = [];
   private selectedId: string | null = null;
 
-  setItems(items: []): void {
+  setItems(items: IProduct[]): void {
     this.items = Array.isArray(items) ? items.slice() : [];
   }
 
