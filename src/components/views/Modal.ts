@@ -1,39 +1,50 @@
-import { ensureElement } from "../../utils/utils";
-import { IEvents } from "../base/Events";
+import { Component } from '../base/Component';
+import { ensureElement } from '../../utils/utils';
+import type { IEvents } from '../base/Events';
 
-export class ModalView {
-  private root: HTMLElement;
-  private content: HTMLElement;
-  private closeBtn: HTMLButtonElement;
+export class ModalView extends Component<{}> {
+  private containerEl: HTMLElement;    // .modal
+  private contentEl: HTMLElement;      // .modal__content
+  private closeBtn: HTMLButtonElement; // .modal__close
+  private activeClass = 'modal_active';
 
   constructor(private events: IEvents) {
-    this.root = ensureElement<HTMLElement>('#modal-container', document.body);
-    this.content = ensureElement<HTMLElement>('.modal__content', this.root);
-    this.closeBtn = ensureElement<HTMLButtonElement>('.modal__close', this.root);
-  
-    this.closeBtn.addEventListener('click', () => this.close())
-    this.root.addEventListener('click', (e) => {
-      if (e.target === this.root)
-        this.close();
-    })
+    // корневой контейнер — сам .modal
+    const containerEl = ensureElement<HTMLElement>('#modal-container');
+    super(containerEl);
 
+    this.containerEl = containerEl;
+    this.contentEl   = ensureElement<HTMLElement>('.modal__content', this.containerEl);
+    this.closeBtn    = ensureElement<HTMLButtonElement>('.modal__close', this.containerEl);
+
+    // закрытие по крестику
+    this.closeBtn.addEventListener('click', () => this.hide());
+
+    // закрытие по клику вне контента
+    this.containerEl.addEventListener('mousedown', (e) => {
+      if (e.target === this.containerEl) this.hide();
+    });
+
+    // слушаем события
     this.events.on<HTMLElement>('modal:open', (node) => {
-      this.setContent(node)
-      this.open()
-    })
-    this.events.on('modal:close', () => this.close())
+      if (!node) return;
+      this.show(node);
+    });
+    this.events.on('modal:close', () => this.hide());
   }
 
-  setContent(node: HTMLElement) {
-    this.content.replaceChildren(node)
+  show(node: HTMLElement) {
+    // вставляем контент
+    this.contentEl.replaceChildren(node);
+    // показываем модалку
+    this.containerEl.classList.add(this.activeClass);
+    // блокируем скролл страницы (опционально)
+    document.body.style.overflow = 'hidden';
   }
 
-  open() {
-    this.root.classList.add('modal_opened')
-  }
-
-  close() {
-    this.root.classList.remove('modal_opened')
-    this.content.replaceChildren()
+  hide() {
+    this.containerEl.classList.remove(this.activeClass);
+    this.contentEl.replaceChildren();
+    document.body.style.overflow = '';
   }
 }

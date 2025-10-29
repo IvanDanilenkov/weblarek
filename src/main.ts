@@ -25,136 +25,163 @@ import { ModalView } from './components/views/Modal';
 import { Header } from './components/views/Header';
 import { CardCatalog } from './components/views/CardCatalog';
 import { ProductModal } from './components/views/ProductModal';
+import { BasketView } from './components/views/BasketView'; 
+import { CardBasketItem } from './components/views/CardBasketItem';
 
 // ============================
-// ИНИЦИАЛИЗАЦИЯ СЛОЁВ
+// СЛОИ И ИНИЦИАЛИЗАЦИЯ
 // ============================
 
 // Событийная шина
 const events = new EventEmitter();
 
+// Включи «лампочку» всех событий (удобно для обучения)
+// Можно закомментировать после отладки
+events.onAll(({ eventName, data }) => {
+  // eslint-disable-next-line no-console
+  console.log('[EVENT]', eventName, data);
+});
+
 // Модели
-const catalog = new Catalog(/* при доработке можно передать events */);
-const cart = new Cart(/* при доработке можно передать events */);
-const buyer = new Buyer(/* при доработке можно передать events */);
+const catalog = new Catalog(events);
+const cart    = new Cart(events);
+const buyer   = new Buyer();
 
 // Базовые View
-const modal = new ModalView(events);
+const modal      = new ModalView(events);
 const headerRoot = ensureElement<HTMLElement>('header.header');
-const header = new Header(events, headerRoot);
+const header     = new Header(events, headerRoot);
 
-// Контейнер каталога
+// Контейнер каталога на главной
 const gallery = ensureElement<HTMLElement>('main.gallery');
 
 // ============================
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================
 
-// Проверка: товар уже в корзине?
-function isInCart(productId: string): boolean {
-  const anyCart = cart as any;
-  if (typeof anyCart.has === 'function') return anyCart.has(productId);
-  if (typeof anyCart.contains === 'function') return anyCart.contains(productId);
-  return cart.getItems().some((p: IProduct) => p.id === productId);
+// Товар в корзине?
+const isInCart = (productId: string) => cart.contains(productId);
+
+// Построить список DOM-узлов для корзины
+function buildBasketItemNodes(): HTMLElement[] {
+  const tplItem = ensureElement<HTMLTemplateElement>('#card-basket');
+
+  return cart.getItems().map((item, index) => {
+    const nodeItem = cloneTemplate(tplItem);
+    const viewItem = new CardBasketItem(nodeItem, events);
+    return viewItem.render({ ...item, index: index + 1 });
+  });
 }
 
-// Обновить счётчик в шапке
-function updateHeaderCounter() {
-  // у тебя в Header есть сеттер counter
-  header.counter = cart.getCount();
-}
+// Перерисовать содержимое корзины в модалке (если открыли корзину)
+function openBasketModal() {
+  const tplBasket = ensureElement<HTMLTemplateElement>('#basket');
+  const basketNode = cloneTemplate(tplBasket);
 
-// Безопасное добавление в корзину по id
-function addToCartById(productId: string) {
-  const product = catalog.getItem(productId);
-  if (!product) return;
+  const basketView = new BasketView(basketNode, events);
+  basketView.items    = buildBasketItemNodes();
+  basketView.total    = cart.getTotal();
+  basketView.disabled = cart.getCount() === 0;
 
-  const anyCart = cart as any;
-  if (typeof anyCart.addItem === 'function') anyCart.addItem(product);
-  else if (typeof anyCart.add === 'function') anyCart.add(product);
-
-  events.emit('cart:changed');
-  updateHeaderCounter();
-}
-
-// Безопасное удаление из корзины по id
-function removeFromCartById(productId: string) {
-  const anyCart = cart as any;
-
-  if (typeof anyCart.removeItemById === 'function') {
-    anyCart.removeItemById(productId);
-  } else if (typeof anyCart.removeItem === 'function') {
-    const product = catalog.getItem(productId);
-    if (product) anyCart.removeItem(product);
-  } else if (typeof anyCart.remove === 'function') {
-    anyCart.remove(productId);
-  } else {
-    const rest = cart.getItems().filter((p: IProduct) => p.id !== productId);
-    if (typeof anyCart.setItems === 'function') anyCart.setItems(rest);
-  }
-
-  events.emit('cart:changed');
-  updateHeaderCounter();
+  modal.show(basketView.render({}));
 }
 
 // ============================
-// РЕНДЕР КАТАЛОГА
+// ПРЕЗЕНТЕР: ОБРАБОТЧИКИ СОБЫТИЙ
 // ============================
 
+// --- МОДЕЛИ ---
+
+// Каталог изменился → перерисовать список карточек на главной
 events.on('catalog:changed', () => {
   const tpl = ensureElement<HTMLTemplateElement>('#card-catalog');
-  const cards = catalog.getItems().map(item => {
-    const card = new CardCatalog(cloneTemplate(tpl), events);
+  const cards = catalog.getItems().map((item) => {
+    const node = cloneTemplate(tpl);
+    const card = new CardCatalog(node, events);
     return card.render(item);
   });
   gallery.replaceChildren(...cards);
 });
 
-// ============================
-// ОТКРЫТИЕ МОДАЛКИ ТОВАРА
-// ============================
-
-events.on<{id: string}>('card:select', ({ id }) => {
+// Выбор карточки (модель хранит selectedId)
+events.on<{ id: string | null }>('catalog:selected', ({ id }) => {
+  if (!id) return;
   const product = catalog.getItem(id);
   if (!product) return;
 
+  // Собираем модальное представление товара
   const tpl = ensureElement<HTMLTemplateElement>('#card-preview');
-  const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+  const node = cloneTemplate(tpl);
 
   const view = new ProductModal(node, events);
-  const data = { ...product, inCart: isInCart(product.id) };
+  const data: IProductModalData = {
+    ...product,
+    inCart: isInCart(product.id),
+  };
 
-  const modalContent = view.render(data);
-  events.emit('modal:open', modalContent);
+  modal.show(view.render(data));
 });
 
-// Клики в модалке
-events.on<{ id: string }>('product:add', ({ id }) => addToCartById(id));
-events.on<{ id: string }>('product:remove', ({ id }) => removeFromCartById(id));
+// Корзина изменилась → обновить счётчик, а если корзина открыта — пересобрать её
+events.on<{ count: number; total: number }>('cart:changed', ({ count }) => {
+  header.counter = count;
 
-// Иконка корзины в шапке
-events.on('basket:open', () => {});
+  // Если модалка сейчас показывает корзину — можно просто заново открыть её
+  // (в учебном проекте это достаточно; при желании можно сделать мягкий апдейт)
+  const modalEl = ensureElement<HTMLElement>('#modal-container');
+  if (modalEl.classList.contains('modal_active')) {
+    // Переоткроем, если внутри была корзина (простая эвристика)
+    // В учебном проекте достаточно всегда переоткрывать при изменениях корзины
+    openBasketModal();
+  }
+});
+
+// --- VIEW ---
+
+// Клик по карточке каталога → просто говорим модели, что выбрали товар
+events.on<{ id: string }>('card:select', ({ id }) => {
+  catalog.setSelectedId(id);
+});
+
+// Кнопка «В корзину» / «Удалить из корзины» в модалке товара
+events.on<{ id: string }>('product:add', ({ id }) => {
+  const p = catalog.getItem(id);
+  if (p) cart.addItem(p);       // Cart сам эмитит 'cart:changed'
+});
+events.on<{ id: string }>('product:remove', ({ id }) => {
+  cart.removeItemById(id);      // Cart сам эмитит 'cart:changed'
+});
+
+// Открытие корзины из шапки
+events.on('basket:open', () => {
+  openBasketModal();
+});
+
+// (Опционально) Начало оформления — откроется форма, когда её реализуем
+events.on('checkout:open', () => {
+  // Тут позже подключим OrderForm (шаг с оплатой) → ContactsForm
+  // Пока оставим заглушку или консоль
+  console.log('checkout:open — TODO: формы заказа');
+});
 
 // ============================
 // ИНИЦИАЛИЗАЦИЯ ДАННЫХ
 // ============================
 
-// 1) Локальные данные из стартера — чтобы сразу увидеть каталог
-catalog.setItems(apiProducts.items);
-// Если модели ещё не эмитят события — пингуем вручную
-events.emit('catalog:changed');
-updateHeaderCounter();
+// Счётчик в шапке на старте
+header.counter = cart.getCount();
 
-// 2) Загрузка с сервера
+// 1) Быстрый старт на локальных данных, чтобы сразу увидеть карточки
+catalog.setItems(apiProducts.items);
+
+// 2) Загрузка с сервера — заменит локальные данные и триггернет 'catalog:changed'
 (async () => {
-  const api = new Api(API_URL);
+  const api  = new Api(API_URL);
   const shop = new ShopApi(api);
 
   try {
     const products = await shop.getCatalog(); // GET /api/weblarek/product
     catalog.setItems(products);
-    // Если модель не шлёт событие сама — шлём вручную:
-    events.emit('catalog:changed');
   } catch (e) {
     console.error('Ошибка загрузки каталога:', e);
   }

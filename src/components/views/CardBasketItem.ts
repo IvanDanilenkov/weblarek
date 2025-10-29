@@ -10,7 +10,7 @@ export class CardBasketItem extends CardBase<IProduct> {
 
   constructor(container: HTMLElement, private events: IEvents) {
     super(container);
-    this.indexEl = ensureElement<HTMLElement>('.basket__item-index', container);
+    this.indexEl  = ensureElement<HTMLElement>('.basket__item-index', container);
     this.deleteBtn = ensureElement<HTMLButtonElement>('.basket__item-delete', container);
 
     this.deleteBtn.addEventListener('click', () => {
@@ -18,14 +18,11 @@ export class CardBasketItem extends CardBase<IProduct> {
     });
   }
 
+  // не храним данные — только заполняем DOM + кешируем id для события
   override render(data: Partial<IProduct> & { index: number }): HTMLElement {
-    // базовые поля (title/image/category/price)
-    super.render(data);
-
-    // служебные + специфический UI
-    if (data && 'id' in data && data.id) this._id = data.id!;
+    super.render(data);                 // title / price заполнятся через CardBase
+    if (data.id) this._id = data.id;    // чтобы знать, что удалять
     this.indexEl.textContent = String(data.index);
-
     return this.container;
   }
 }
