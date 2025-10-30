@@ -14,7 +14,7 @@ export class BasketView extends Component<{}> {
     this.submitBtn = ensureElement<HTMLButtonElement>('.basket__button', container);
 
     this.submitBtn.addEventListener('click', () => {
-      this.events.emit('checkout:open'); // презентер это обработает
+      this.events.emit('checkout:open');
     });
   }
 

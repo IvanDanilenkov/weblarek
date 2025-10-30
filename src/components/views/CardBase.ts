@@ -1,5 +1,5 @@
 import { Component } from '../base/Component';
-import { CDN_URL, categoryMap } from '../../utils/constants';
+import { categoryMap } from '../../utils/constants';
 
 /**
  * Базовый класс карточек. Никакие данные не хранит.
@@ -13,10 +13,10 @@ export abstract class CardBase<T> extends Component<T> {
 
   constructor(container: HTMLElement) {
     super(container);
-    this.titleEl = container.querySelector('.card__title') ?? undefined;
+    this.titleEl    = container.querySelector('.card__title') ?? undefined;
     this.categoryEl = container.querySelector('.card__category') ?? undefined;
-    this.imageEl = container.querySelector('.card__image') ?? undefined;
-    this.priceEl = container.querySelector('.card__price') ?? undefined;
+    this.imageEl    = container.querySelector('.card__image') ?? undefined;
+    this.priceEl    = container.querySelector('.card__price') ?? undefined;
   }
 
   // Переопределяем render: НЕ вызываем super.render(data)!
@@ -26,22 +26,26 @@ export abstract class CardBase<T> extends Component<T> {
       if ('title' in data && this.titleEl) {
         this.titleEl.textContent = (data as any).title ?? '';
       }
+
       // image
       if ('image' in data && this.imageEl) {
         const value: string = (data as any).image;
         if (value) {
-          const src = this.resolveImage(value);
-          this.setImage(this.imageEl, src, (data as any).title ?? '');
+          this.setImage(this.imageEl, value, (data as any).title ?? '');
         }
       }
+
       // category
       if ('category' in data && this.categoryEl) {
         const value: string = (data as any).category ?? '';
         this.categoryEl.textContent = value;
+
+        // раскрасим по карте
         for (const [key, cls] of Object.entries(categoryMap)) {
           this.categoryEl.classList.toggle(cls, key === value);
         }
       }
+
       // price
       if ('price' in data && this.priceEl) {
         const value: number | null = (data as any).price ?? null;
@@ -50,12 +54,4 @@ export abstract class CardBase<T> extends Component<T> {
     }
     return this.container;
   }
-
-  protected resolveImage(value: string): string {
-    if (!value) return '';
-    if (/^(https?:|data:)/.test(value)) return value;
-    if (value.startsWith('/')) return `${CDN_URL}${value}`;
-    return `${CDN_URL}/${value}`;
-  }
 }
-

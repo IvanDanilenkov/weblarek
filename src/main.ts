@@ -2,7 +2,6 @@
 import './scss/styles.scss';
 
 // ===== ДАННЫЕ/ТИПЫ =====
-import { apiProducts } from './utils/data';
 import type { IProduct } from './types';
 import type { IProductModalData } from './components/views/ProductModal';
 
@@ -73,7 +72,7 @@ function buildBasketItemNodes(): HTMLElement[] {
   });
 }
 
-// Перерисовать содержимое корзины в модалке (если открыли корзину)
+// Перерисовать содержимое корзины в модалке
 function openBasketModal() {
   const tplBasket = ensureElement<HTMLTemplateElement>('#basket');
   const basketNode = cloneTemplate(tplBasket);
@@ -127,11 +126,9 @@ events.on<{ count: number; total: number }>('cart:changed', ({ count }) => {
   header.counter = count;
 
   // Если модалка сейчас показывает корзину — можно просто заново открыть её
-  // (в учебном проекте это достаточно; при желании можно сделать мягкий апдейт)
   const modalEl = ensureElement<HTMLElement>('#modal-container');
   if (modalEl.classList.contains('modal_active')) {
-    // Переоткроем, если внутри была корзина (простая эвристика)
-    // В учебном проекте достаточно всегда переоткрывать при изменениях корзины
+    // Переоткроем, если внутри была корзина
     openBasketModal();
   }
 });
@@ -171,18 +168,16 @@ events.on('checkout:open', () => {
 // Счётчик в шапке на старте
 header.counter = cart.getCount();
 
-// 1) Быстрый старт на локальных данных, чтобы сразу увидеть карточки
-catalog.setItems(apiProducts.items);
-
-// 2) Загрузка с сервера — заменит локальные данные и триггернет 'catalog:changed'
+// Загрузка с сервера
 (async () => {
   const api  = new Api(API_URL);
   const shop = new ShopApi(api);
 
   try {
     const products = await shop.getCatalog(); // GET /api/weblarek/product
-    catalog.setItems(products);
+    catalog.setItems(products);               // модель сама эмитит 'catalog:changed'
   } catch (e) {
     console.error('Ошибка загрузки каталога:', e);
   }
 })();
+

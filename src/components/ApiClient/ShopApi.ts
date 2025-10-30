@@ -1,4 +1,3 @@
-// src/components/ApiClient/ShopApi.ts
 import type {
   IApi,
   IProduct,
@@ -6,9 +5,10 @@ import type {
   IOrderRequest,
   IOrderResponse,
 } from '../../types';
+import { CDN_URL } from '../../utils/constants';
 
 export class ShopApi {
-  constructor (private api: IApi) {}
+  constructor (private api: IApi, private cdn: string = CDN_URL) {}
 
   /**
    * Получить каталог товаров
@@ -16,8 +16,22 @@ export class ShopApi {
    */
   async getCatalog(): Promise<IProduct[]> {
     const data = await this.api.get<IProductsResponse | IProduct[]>('/product');
-    return Array.isArray(data) ? data : (data?.items ?? []);
-  }
+
+    const items =  Array.isArray(data) ? data : (data?.items ?? []);
+
+    return items.map((item) => {
+      const raw = item.image ?? '';
+      const withPng = raw.replace(/\.svg$/i, '.png');
+      const isAbsolute = /^(https?:)?\/\//i.test(withPng);
+
+      return {
+        ...item,
+        image: isAbsolute
+          ? withPng
+          : `${this.cdn.replace(/\/$/, '')}/${withPng.replace(/^\//, '')}`,
+      };
+    });
+  }  
 
   /**
    * Отправить заказ
