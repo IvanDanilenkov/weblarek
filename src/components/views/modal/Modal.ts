@@ -1,6 +1,6 @@
-import { Component } from '../base/Component';
-import { ensureElement } from '../../utils/utils';
-import type { IEvents } from '../base/Events';
+import { Component } from '../../base/Component';
+import { ensureElement } from '../../../utils/utils';
+import type { IEvents } from '../../base/Events';
 
 export class ModalView extends Component<{}> {
   private containerEl: HTMLElement;    // .modal
@@ -38,8 +38,6 @@ export class ModalView extends Component<{}> {
     this.contentEl.replaceChildren(node);
     // показываем модалку
     this.containerEl.classList.add(this.activeClass);
-    // блокируем скролл страницы (опционально)
-    document.body.style.overflow = 'hidden';
   }
 
   hide() {

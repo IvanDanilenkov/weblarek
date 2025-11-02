@@ -2,8 +2,8 @@
 import './scss/styles.scss';
 
 // ===== ДАННЫЕ/ТИПЫ =====
-import type { IProduct } from './types';
-import type { IProductModalData } from './components/views/ProductModal';
+import type { IProductModalData } from './components/views/modal/ProductModal';
+import type { IBuyer } from './types';
 
 // ===== МОДЕЛИ =====
 import { Catalog } from './components/models/Catalog';
@@ -20,12 +20,14 @@ import { ensureElement, cloneTemplate } from './utils/utils';
 
 // ===== VIEW / EVENTS =====
 import { EventEmitter } from './components/base/Events';
-import { ModalView } from './components/views/Modal';
-import { Header } from './components/views/Header';
-import { CardCatalog } from './components/views/CardCatalog';
-import { ProductModal } from './components/views/ProductModal';
-import { BasketView } from './components/views/BasketView'; 
-import { CardBasketItem } from './components/views/CardBasketItem';
+import { ModalView } from './components/views/modal/Modal';
+import { Header } from './components/views/header/Header';
+import { CardCatalog } from './components/views/cards/CardCatalog';
+import { ProductModal } from './components/views/modal/ProductModal';
+import { BasketView } from './components/views/modal/BasketView';
+import { CardBasketItem } from './components/views/cards/CardBasketItem';
+import { OrderFormView } from './components/views/forms/OrderFormView';
+import { ContactsFormView } from './components/views/forms/ContactsFormView';
 
 // ============================
 // СЛОИ И ИНИЦИАЛИЗАЦИЯ
@@ -34,17 +36,19 @@ import { CardBasketItem } from './components/views/CardBasketItem';
 // Событийная шина
 const events = new EventEmitter();
 
-// Включи «лампочку» всех событий (удобно для обучения)
-// Можно закомментировать после отладки
+// «лампочка» событий
 events.onAll(({ eventName, data }) => {
-  // eslint-disable-next-line no-console
   console.log('[EVENT]', eventName, data);
 });
 
 // Модели
 const catalog = new Catalog(events);
 const cart    = new Cart(events);
-const buyer   = new Buyer();
+const buyer   = new Buyer(events);
+
+// API (один раз)
+const api  = new Api(API_URL);
+const shop = new ShopApi(api);
 
 // Базовые View
 const modal      = new ModalView(events);
@@ -57,6 +61,9 @@ const gallery = ensureElement<HTMLElement>('main.gallery');
 // ============================
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================
+
+// какая сейчас форма в модалке
+let currentForm: OrderFormView | ContactsFormView | null = null;
 
 // Товар в корзине?
 const isInCart = (productId: string) => cart.contains(productId);
@@ -85,6 +92,56 @@ function openBasketModal() {
   modal.show(basketView.render({}));
 }
 
+// открыть форму №1 (оплата + адрес)
+function openOrderForm() {
+  const tpl = ensureElement<HTMLTemplateElement>('#order');
+  const node = cloneTemplate(tpl);
+  const orderForm = new OrderFormView(node, events);
+
+  // если в buyer уже есть адрес — подставим
+  const buyerData = buyer.getData();
+  if (buyerData.address) {
+    orderForm.address = buyerData.address;
+  }
+
+  currentForm = orderForm;
+  modal.show(orderForm.render({}));
+}
+
+// открыть форму №2 (контакты)
+function openContactsForm() {
+  const tpl = ensureElement<HTMLTemplateElement>('#contacts');
+  const node = cloneTemplate(tpl);
+  const contactsForm = new ContactsFormView(node, events);
+
+  const buyerData = buyer.getData();
+  if (buyerData.email) contactsForm.email = buyerData.email;
+  if (buyerData.phone) contactsForm.phone = buyerData.phone;
+
+  currentForm = contactsForm;
+  modal.show(contactsForm.render({}));
+}
+
+// показать «успех»
+function openSuccessModal(total: number) {
+  const tpl = ensureElement<HTMLTemplateElement>('#success');
+  const node = cloneTemplate(tpl);
+
+  const desc = node.querySelector('.order-success__description');
+  if (desc) {
+    desc.textContent = `Списано ${total} синапсов`;
+  }
+
+  const closeBtn = node.querySelector<HTMLButtonElement>('.order-success__close');
+  if(closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      events.emit('modal:close')
+    })
+  }
+
+  modal.show(node);
+}
+
 // ============================
 // ПРЕЗЕНТЕР: ОБРАБОТЧИКИ СОБЫТИЙ
 // ============================
@@ -102,7 +159,7 @@ events.on('catalog:changed', () => {
   gallery.replaceChildren(...cards);
 });
 
-// Выбор карточки (модель хранит selectedId)
+// Выбор карточки
 events.on<{ id: string | null }>('catalog:selected', ({ id }) => {
   if (!id) return;
   const product = catalog.getItem(id);
@@ -121,15 +178,17 @@ events.on<{ id: string | null }>('catalog:selected', ({ id }) => {
   modal.show(view.render(data));
 });
 
-// Корзина изменилась → обновить счётчик, а если корзина открыта — пересобрать её
+// Корзина изменилась → обновить счётчик, а если открыта именно корзина — пересобрать её
 events.on<{ count: number; total: number }>('cart:changed', ({ count }) => {
   header.counter = count;
 
-  // Если модалка сейчас показывает корзину — можно просто заново открыть её
   const modalEl = ensureElement<HTMLElement>('#modal-container');
+  // перерисовываем корзину только если в модалке именно корзина
   if (modalEl.classList.contains('modal_active')) {
-    // Переоткроем, если внутри была корзина
-    openBasketModal();
+    const content = modalEl.querySelector('.modal__content');
+    if (content && content.querySelector('.basket')) {
+      openBasketModal();
+    }
   }
 });
 
@@ -154,11 +213,87 @@ events.on('basket:open', () => {
   openBasketModal();
 });
 
-// (Опционально) Начало оформления — откроется форма, когда её реализуем
+// модалка с формой
 events.on('checkout:open', () => {
-  // Тут позже подключим OrderForm (шаг с оплатой) → ContactsForm
-  // Пока оставим заглушку или консоль
-  console.log('checkout:open — TODO: формы заказа');
+  openOrderForm();
+});
+
+// ============================
+// ФОРМЫ → МОДЕЛЬ ПОКУПАТЕЛЯ
+// ============================
+
+events.on<{ form: string; field: string; value: string }>(
+  'form:change',
+  ({ form, field, value }) => {
+    // форма заказа (шаг 1)
+    if (form === 'order' && (field === 'address' || field === 'payment')) {
+      buyer.setField(field as 'address' | 'payment', value as any);
+    }
+
+    // форма контактов (шаг 2)
+    if (form === 'contacts' && (field === 'email' || field === 'phone')) {
+      buyer.setField(field as 'email' | 'phone', value);
+    }
+  }
+);
+
+// отправка форм
+events.on<{ form: string }>('form:submit', async ({ form }) => {
+  const errors = buyer.validate();
+
+  // ===== ШАГ 1: форма заказа =====
+  if (form === 'order') {
+    if (errors.payment || errors.address) {
+      console.warn('order form invalid', errors);
+      return;
+    }
+    openContactsForm();
+    return;
+  }
+
+  // ===== ШАГ 2: форма контактов =====
+  if (form === 'contacts') {
+    if (errors.email || errors.phone) {
+      console.warn('contacts form invalid', errors);
+      return;
+    }
+
+    const buyerData = buyer.getData();
+    const items = cart.getItems().map((p) => p.id);
+    const total = cart.getTotal();
+
+    try {
+      const result = await shop.createOrder({
+        ...buyerData,
+        items,
+        total,
+      });
+
+      // очищаем корзину и покупателя
+      cart.clear();
+      buyer.clear();
+
+      header.counter = cart.getCount();
+      openSuccessModal(result.total);
+    } catch (e) {
+      console.error('Ошибка оформления заказа', e);
+    }
+  }
+});
+
+// реакция на изменение покупателя → включаем/выключаем кнопку
+events.on<IBuyer>('buyer:changed', (data) => {
+  if (currentForm instanceof OrderFormView) {
+    const isValid = Boolean(data.payment && data.address);
+    currentForm.valid = isValid;
+    currentForm.error = isValid ? '' : 'Выберите способ оплаты и введите адрес';
+  }
+
+  if (currentForm instanceof ContactsFormView) {
+    const isValid = Boolean(data.email && data.phone);
+    currentForm.valid = isValid;
+    currentForm.error = isValid ? '' : 'Укажите e-mail и телефон';
+  }
 });
 
 // ============================
@@ -168,16 +303,12 @@ events.on('checkout:open', () => {
 // Счётчик в шапке на старте
 header.counter = cart.getCount();
 
-// Загрузка с сервера
+// Загрузка с сервера (используем УЖЕ созданный shop)
 (async () => {
-  const api  = new Api(API_URL);
-  const shop = new ShopApi(api);
-
   try {
-    const products = await shop.getCatalog(); // GET /api/weblarek/product
-    catalog.setItems(products);               // модель сама эмитит 'catalog:changed'
+    const products = await shop.getCatalog();
+    catalog.setItems(products);
   } catch (e) {
     console.error('Ошибка загрузки каталога:', e);
   }
 })();
-

@@ -1,7 +1,7 @@
-import type { IEvents } from '../base/Events';
-import type { IProduct } from '../../types';
-import { CardBase } from './CardBase';
-import { ensureElement } from '../../utils/utils';
+import type { IEvents } from '../../base/Events';
+import type { IProduct } from '../../../types';
+import { CardBase } from '../cards/CardBase'; 
+import { ensureElement } from '../../../utils/utils';
 
 export interface IProductModalData extends IProduct {
   inCart: boolean;

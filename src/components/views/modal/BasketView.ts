@@ -1,6 +1,6 @@
-import { Component } from '../base/Component';
-import { ensureElement } from '../../utils/utils';
-import type { IEvents } from '../base/Events';
+import { Component } from '../../base/Component';
+import { ensureElement } from '../../../utils/utils';
+import type { IEvents } from '../../base/Events';
 
 export class BasketView extends Component<{}> {
   private listEl: HTMLElement;

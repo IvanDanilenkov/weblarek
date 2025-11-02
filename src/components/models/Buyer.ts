@@ -1,4 +1,5 @@
 import type { IBuyer, TPayment } from "../../types";
+import { IEvents } from "../base/Events";
 
 export class Buyer {
   private payment: TPayment = '';
@@ -6,8 +7,13 @@ export class Buyer {
   private phone = '';
   private address = '';
 
+   constructor(private events?: IEvents) {}
+
+
   setField(field: keyof IBuyer, value: string): void {
     (this as unknown as Record<string, string>)[field] = value;
+    // уведомляем презентер, что данные покупателя поменялись
+    this.events?.emit('buyer:changed', { ...this.getData() });
   }
 
   getData(): IBuyer {

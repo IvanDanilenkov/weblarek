@@ -1,7 +1,7 @@
-import type { IEvents } from '../base/Events';
-import type { IProduct } from '../../types';
+import type { IEvents } from '../../base/Events';
+import type { IProduct } from '../../../types';
 import { CardBase } from './CardBase';
-import { ensureElement } from '../../utils/utils';
+import { ensureElement } from '../../../utils/utils';
 
 export class CardBasketItem extends CardBase<IProduct> {
   private indexEl: HTMLElement;

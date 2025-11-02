@@ -37,6 +37,11 @@ export class Cart {
     return this.items.some((p) => p.id === id);
   }
 
+  clear() {
+    this.items = [];
+    this.emitChanged();
+  }
+
   private emitChanged() {
     this.events.emit('cart:changed', {
       count: this.getCount(),

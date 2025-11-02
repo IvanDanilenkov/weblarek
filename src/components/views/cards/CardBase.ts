@@ -1,5 +1,5 @@
-import { Component } from '../base/Component';
-import { categoryMap } from '../../utils/constants';
+import { Component } from '../../base/Component';
+import { categoryMap } from '../../../utils/constants'; 
 
 /**
  * Базовый класс карточек. Никакие данные не хранит.

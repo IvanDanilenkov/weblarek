@@ -1,6 +1,6 @@
 import { CardBase } from './CardBase';
-import type { IEvents } from '../base/Events';
-import type { IProduct } from '../../types';
+import type { IEvents } from '../../base/Events';
+import type { IProduct } from '../../../types';
 
 export class CardCatalog extends CardBase<IProduct> {
   private _id = '';
