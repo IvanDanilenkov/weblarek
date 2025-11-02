@@ -18,9 +18,16 @@ export class BasketView extends Component<{}> {
     });
   }
 
-  set items(nodes: HTMLElement[]) {
-    this.listEl.replaceChildren(...nodes);
-  }
+  set items(value: HTMLElement[]) {
+    if (value.length === 0) {
+      // показываем "Корзина пуста"
+      const empty = document.createElement('p');
+      empty.className = 'basket__empty';
+      empty.textContent = 'Корзина пуста';
+      this.listEl.replaceChildren(empty);
+    } else {
+      this.listEl.replaceChildren(...value);
+    }}
 
   set total(value: number) {
     this.priceEl.textContent = `${value} синапсов`;

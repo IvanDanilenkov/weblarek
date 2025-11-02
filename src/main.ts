@@ -36,11 +36,6 @@ import { ContactsFormView } from './components/views/forms/ContactsFormView';
 // Событийная шина
 const events = new EventEmitter();
 
-// «лампочка» событий
-events.onAll(({ eventName, data }) => {
-  console.log('[EVENT]', eventName, data);
-});
-
 // Модели
 const catalog = new Catalog(events);
 const cart    = new Cart(events);
