@@ -1,6 +1,7 @@
 import { Component } from '../../base/Component';
 import { ensureElement } from '../../../utils/utils';
 import type { IEvents } from '../../base/Events';
+import { EVENTS } from '../../../utils/events';
 
 export class BasketView extends Component<{}> {
   private listEl: HTMLElement;
@@ -14,7 +15,7 @@ export class BasketView extends Component<{}> {
     this.submitBtn = ensureElement<HTMLButtonElement>('.basket__button', container);
 
     this.submitBtn.addEventListener('click', () => {
-      this.events.emit('checkout:open');
+      this.events.emit(EVENTS.CHECKOUT_OPEN);
     });
   }
 

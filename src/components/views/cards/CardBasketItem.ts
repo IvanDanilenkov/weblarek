@@ -2,6 +2,7 @@ import type { IEvents } from '../../base/Events';
 import type { IProduct } from '../../../types';
 import { CardBase } from './CardBase';
 import { ensureElement } from '../../../utils/utils';
+import { EVENTS } from '../../../utils/events';
 
 export class CardBasketItem extends CardBase<IProduct> {
   private indexEl: HTMLElement;
@@ -14,7 +15,7 @@ export class CardBasketItem extends CardBase<IProduct> {
     this.deleteBtn = ensureElement<HTMLButtonElement>('.basket__item-delete', container);
 
     this.deleteBtn.addEventListener('click', () => {
-      if (this._id) this.events.emit('product:remove', { id: this._id });
+      if (this._id) this.events.emit(EVENTS.PRODUCT_REMOVE, { id: this._id });
     });
   }
 

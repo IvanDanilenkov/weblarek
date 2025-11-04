@@ -2,6 +2,7 @@
 import { Component } from '../../base/Component';
 import { ensureElement } from '../../../utils/utils';
 import type { IEvents } from '../../base/Events';
+import { EVENTS } from '../../../utils/events';
 
 export abstract class FormView<T> extends Component<T> {
   protected form: HTMLFormElement;
@@ -19,7 +20,7 @@ export abstract class FormView<T> extends Component<T> {
       const target = e.target as HTMLInputElement | HTMLTextAreaElement;
       if (!target.name) return;
 
-      this.events.emit('form:change', {
+      this.events.emit(EVENTS.FORM_CHANGE, {
         form: this.form.name,
         field: target.name,
         value: target.value,
@@ -28,7 +29,7 @@ export abstract class FormView<T> extends Component<T> {
 
     this.form.addEventListener('submit', (e) => {
       e.preventDefault();
-      this.events.emit('form:submit', {
+      this.events.emit(EVENTS.FORM_SUBMIT, {
         form: this.form.name,
       });
     });

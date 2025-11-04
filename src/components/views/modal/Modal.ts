@@ -1,6 +1,7 @@
 import { Component } from '../../base/Component';
 import { ensureElement } from '../../../utils/utils';
 import type { IEvents } from '../../base/Events';
+import { EVENTS } from '../../../utils/events';
 
 export class ModalView extends Component<{}> {
   private containerEl: HTMLElement;    // .modal
@@ -26,11 +27,11 @@ export class ModalView extends Component<{}> {
     });
 
     // слушаем события
-    this.events.on<HTMLElement>('modal:open', (node) => {
+    this.events.on<HTMLElement>(EVENTS.MODAL_OPEN, (node) => {
       if (!node) return;
       this.show(node);
     });
-    this.events.on('modal:close', () => this.hide());
+    this.events.on(EVENTS.MODAL_CLOSE, () => this.hide());
   }
 
   show(node: HTMLElement) {

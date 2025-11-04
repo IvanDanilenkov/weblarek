@@ -2,6 +2,7 @@ import type { IEvents } from '../../base/Events';
 import type { IProduct } from '../../../types';
 import { CardBase } from '../cards/CardBase'; 
 import { ensureElement } from '../../../utils/utils';
+import { EVENTS } from '../../../utils/events';
 
 export interface IProductModalData extends IProduct {
   inCart: boolean;
@@ -24,11 +25,11 @@ export class ProductModal extends CardBase<IProductModalData> {
     this.btnEl.addEventListener('click', () => {
       if (!this._id) return;
       if (this._inCart) {
-        this.events.emit('product:remove', { id: this._id });
+        this.events.emit(EVENTS.PRODUCT_REMOVE, { id: this._id });
       } else {
-        this.events.emit('product:add', { id: this._id });
+        this.events.emit(EVENTS.PRODUCT_ADD, { id: this._id });
       }
-      this.events.emit('modal:close');
+      this.events.emit(EVENTS.MODAL_CLOSE);
     });
   }
 

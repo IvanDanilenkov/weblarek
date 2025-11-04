@@ -1,6 +1,7 @@
 import { FormView } from "./Form";
 import { IEvents } from "../../base/Events";
 import { ensureElement } from "../../../utils/utils";
+import { EVENTS } from "../../../utils/events";
 
 export class OrderFormView extends FormView<{}> {
   private addressInput: HTMLInputElement;
@@ -20,6 +21,10 @@ export class OrderFormView extends FormView<{}> {
     this.payCashBtn.addEventListener('click', () => this.setPayment('cash'));
   }
 
+  set payment(method: 'card' | 'cash') {
+    this.setPayment(method);
+  }
+
   private setPayment(method: 'card' | 'cash') {
     // выделяем выбранную кнопку
     this.payCardBtn.classList.toggle(this.activeClass, method === 'card');
@@ -27,7 +32,7 @@ export class OrderFormView extends FormView<{}> {
 
     this.events.emit('order:payment', { payment: method });
 
-    this.events.emit('form:change', {
+    this.events.emit(EVENTS.FORM_CHANGE, {
       form: 'order',
       field: 'payment',
       value: method,

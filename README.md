@@ -325,6 +325,24 @@ IBuyer — данные покупателя (форма заказа).
 `form:change` — при изменении полей
 `form:submit` — при нажатии кнопки «Оформить заказ»
 
+## Класс SuccessMessage
+Отвечает за отображение модального окна после успешного оформления заказа.
+
+Конструктор:
+
+`constructor(container: HTMLElement, events: IEvents)` - принимает шаблон формы и экземпляр событий.
+
+
+Поля:
+
+`descEl: HTMLElement` — текст с суммой списания
+`btnEl: HTMLButtonElement` — кнопка закрытия
+
+Методы:
+
+`set total(value: number)` — обновляет текст, указывая списанную сумму
+при клике на кнопку вызывает событие EVENTS.MODAL_CLOSE
+
 ### Класс ModalView
 Отвечает за открытие и закрытие модальных окон.
 
@@ -379,8 +397,16 @@ IBuyer — данные покупателя (форма заказа).
 - Координация логики заказа, валидации и отображения интерфейса.
 
 **Примеры событий:**
-- `card:select` → выбор товара;
-- `catalog:changed` → отрисовка каталога;
-- `cart:changed` → обновление шапки;
-- `checkout:open` → открытие формы заказа;
-- `form:submit` → проверка и оформление заказа.
+Все события вынесены в единый перечисляемый объект EVENTS в src/utils/events.ts.
+
+- CATALOG_CHANGED = 'catalog:changed',
+- CART_CHANGED = 'cart:changed',
+- PRODUCT_ADD = 'product:add',
+- PRODUCT_REMOVE = 'product:remove',
+- CHECKOUT_OPEN = 'checkout:open',
+- FORM_SUBMIT = 'form:submit',
+- MODAL_CLOSE = 'modal:close',
+- и др.
+
+Использование:
+`events.on(EVENTS.CART_CHANGED, () => { ... })`
