@@ -89,24 +89,24 @@ let currentForm: OrderFormView | ContactsFormView | null = null;
 // 4. ВСПОМОГАТЕЛЬНОЕ
 // ============================
 
-// товар в корзине?
+// элементы корзины
 const isInCart = (productId: string) => cart.contains(productId);
 
-// собрать элементы корзины
-function buildBasketItemNodes(): HTMLElement[] {
-  return cart.getItems().map((item, index) => {
-    const node = cloneTemplate(tplBasketItem);
-    const view = new CardBasketItem(node, events);
-    return view.render({ ...item, index: index + 1 });
+function updateBasketView() {
+  const items = cart.getItems().map((item, index) => {
+    const node = tplBasketItem.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    const viewItem = new CardBasketItem(node, events);
+    return viewItem.render({ ...item, index: index + 1 });
   });
+
+  basketView.items    = items;
+  basketView.total    = cart.getTotal();
+  basketView.disabled = cart.getCount() === 0;
 }
 
 // открыть корзину
 function openBasketModal() {
-  basketView.items    = buildBasketItemNodes();
-  basketView.total    = cart.getTotal();
-  basketView.disabled = cart.getCount() === 0;
-
+  updateBasketView();
   modal.show(basketView.render({}));
 }
 
@@ -180,16 +180,9 @@ events.on<{ id: string | null }>(EVENTS.CATALOG_SELECTED, ({ id }) => {
 
 // корзина изменилась
 events.on<{ count: number; total: number }>(EVENTS.CART_CHANGED, ({ count }) => {
+  // обновили счётчик в шапке
   header.counter = count;
-
-  // если открыта корзина — переобновим
-  const modalEl = ensureElement<HTMLElement>('#modal-container');
-  if (modalEl.classList.contains('modal_active')) {
-    const content = modalEl.querySelector('.modal__content');
-    if (content && content.querySelector('.basket')) {
-      openBasketModal();
-    }
-  }
+  updateBasketView();
 });
 
 // --- VIEW ---
@@ -260,16 +253,20 @@ events.on<{ form: string }>(EVENTS.FORM_SUBMIT, async ({ form }) => {
     const items = cart.getItems().map((p) => p.id);
     const total = cart.getTotal();
 
-    const result = await shop.createOrder({
-      ...buyerData,
-      items,
-      total,
-    });
+    try {
+      const result = await shop.createOrder({
+        ...buyerData,
+        items,
+        total,
+      });
 
-    cart.clear();
-    buyer.clear();
-    header.counter = cart.getCount();
-    openSuccessModal(result.total);
+      cart.clear();
+      buyer.clear();
+      header.counter = cart.getCount();
+      openSuccessModal(result.total);
+    } catch (err) {
+      console.error('Ошибка оформления заказа', err);
+    }
   }
 });
 
