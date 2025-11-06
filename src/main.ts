@@ -263,6 +263,9 @@ events.on<{ form: string }>(EVENTS.FORM_SUBMIT, async ({ form }) => {
       cart.clear();
       buyer.clear();
       header.counter = cart.getCount();
+      orderFormView.reset();
+      contactsFormView.reset();
+
       openSuccessModal(result.total);
     } catch (err) {
       console.error('Ошибка оформления заказа', err);

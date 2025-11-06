@@ -20,4 +20,11 @@ export class ContactsFormView extends FormView<{}> {
   set phone(value: string) {
     this.phoneInput.value = value;
   }
+
+  reset() {
+    this.emailInput.value = '';
+    this.phoneInput.value = '';
+    this.valid = false;
+    this.error = '';
+  }
 }

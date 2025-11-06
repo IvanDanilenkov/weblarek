@@ -42,4 +42,12 @@ export class OrderFormView extends FormView<{}> {
   set address(value: string) {
     this.addressInput.value = value;
   }
+
+  reset() {
+    this.addressInput.value = '';
+    this.payCardBtn.classList.remove(this.activeClass);
+    this.payCashBtn.classList.remove(this.activeClass);
+    this.valid = false;
+    this.error = '';
+  }
 }
